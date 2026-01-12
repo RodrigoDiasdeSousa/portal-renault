@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portal de Pesquisas</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    .box { border: 1px solid #ddd; padding: 16px; border-radius: 10px; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    label { font-size: 12px; color: #444; display: block; margin-bottom: 4px; }
+    input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+    th { background: #fafafa; position: sticky; top: 0; }
+    .muted { color: #666; font-size: 12px; }
+    .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .btn { padding: 8px 12px; border: 1px solid #ccc; border-radius: 8px; background: #fff; cursor: pointer; text-decoration: none; color: #111; display: inline-block; }
+    .btn.primary { border-color: #111; font-weight: 600; }
+    .pagination { display: flex; gap: 8px; align-items: center; margin-top: 16px; }
+    .pagination a { text-decoration: none; padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; color: #111; }
+  </style>
+</head>
+<body>
+
+  <div class="actions" style="justify-content: space-between;">
+    <h2>Portal de Pesquisas</h2>
+    <div>
+      {% if user.is_authenticated %}
+        <span class="muted">Logado como {{ user.username }}</span>
+        &nbsp;|&nbsp;
+        <a href="/accounts/logout/">Sair</a>
+      {% else %}
+        <a href="/accounts/login/">Entrar</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="box">
+    <form method="get">
+      <div class="grid">
+        <div>
+          <label>Data (de)</label>
+          {{ filter.form.date_after }}
+        </div>
+        <div>
+          <label>Data (até)</label>
+          {{ filter.form.date_before }}
+        </div>
+        <div>
+          <label>Nota mín.</label>
+          {{ filter.form.min_rating }}
+        </div>
+        <div>
+          <label>Nota máx.</label>
+          {{ filter.form.max_rating }}
+        </div>
+
+        <div>
+          <label>Marca</label>
+          {{ filter.form.brand }}
+        </div>
+        <div>
+          <label>Modelo</label>
+          {{ filter.form.model }}
+        </div>
+        <div>
+          <label>Concessionária (Location)</label>
+          {{ filter.form.location_name }}
+        </div>
+        <div>
+          <label>Status</label>
+          {{ filter.form.result_status }}
+        </div>
+
+        <div>
+          <label>Origem</label>
+          {{ filter.form.origin }}
+        </div>
+        <div>
+          <label>Atividade</label>
+          {{ filter.form.activity }}
+        </div>
+        <div style="grid-column: span 2;">
+          <label>Busca (nome/email/vin/feedback)</label>
+          {{ filter.form.q }}
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top: 12px;">
+        <button class="btn primary" type="submit">Filtrar</button>
+
+        <!-- Limpar filtros -->
+        <a class="btn" href="{% url 'pesquisas:list' %}">Limpar</a>
+
+        <!-- Exportações mantendo os filtros atuais -->
+        <a class="btn" href="{% url 'pesquisas:export_csv' %}?{{ request.GET.urlencode }}">Exportar CSV</a>
+        <a class="btn" href="{% url 'pesquisas:export_xlsx' %}?{{ request.GET.urlencode }}">Exportar XLSX</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="muted">
+    Resultados: {{ page_obj.paginator.count }}
+  </div>
+
+  <div class="box" style="overflow:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Location</th>
+          <th>Marca</th>
+          <th>Modelo</th>
+          <th>Nota</th>
+          <th>Status</th>
+          <th>Feedback</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in surveys %}
+          <tr>
+            <td>{{ s.date|date:"d/m/Y H:i" }}</td>
+            <td>{{ s.location_name }}</td>
+            <td>{{ s.brand }}</td>
+            <td>{{ s.model }}</td>
+            <td>{{ s.overall_rating }}</td>
+            <td>{{ s.result_status }}</td>
+            <td style="max-width: 560px;">
+              {{ s.experience_feedback|default:"" }}
+              {% if s.experience_feedback %}
+                <div class="muted">VIN: {{ s.vin }}</div>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7">Nenhum resultado com esses filtros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+      <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{k}}={{v|urlencode}}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">◀ Anterior</a>
+    {% endif %}
+
+    <span class="muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+      <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{k}}={{v|urlencode}}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Próxima ▶</a>
+    {% endif %}
+  </div>
+
+</body>
+</html>

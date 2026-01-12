@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Entrar</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f7f7f8; margin:0; }
+    .wrap { max-width: 420px; margin: 10vh auto; padding: 18px; }
+    .card { background:#fff; border:1px solid #e6e6e6; border-radius: 14px; padding: 18px; }
+    h1 { margin: 0 0 12px 0; font-size: 20px; }
+    label { display:block; margin: 10px 0 6px; font-size: 12px; color:#444; }
+    input { width:100%; padding: 10px; border:1px solid #ccc; border-radius: 10px; }
+    .btn { margin-top: 14px; width:100%; padding: 10px; border-radius: 10px; border:1px solid #111; background:#111; color:#fff; cursor:pointer; }
+    .muted { margin-top: 10px; font-size: 12px; color:#666; }
+    .error { background:#fff3f3; border:1px solid #ffd2d2; padding:10px; border-radius:10px; color:#8a1f1f; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Entrar no Portal</h1>
+
+      {% if form.errors %}
+        <div class="error">Usuário ou senha inválidos.</div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <label for="id_username">Usuário</label>
+        {{ form.username }}
+
+        <label for="id_password">Senha</label>
+        {{ form.password }}
+
+        <button class="btn" type="submit">Entrar</button>
+
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
+      </form>
+
+      <div class="muted">
+        Se você não tem acesso, peça para o administrador criar seu usuário.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
