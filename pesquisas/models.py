@@ -46,5 +46,20 @@ class SurveyResponse(models.Model):
         ]
         ordering = ["-date", "-id"]
 
+    @property
+    def loja_formatada(self):
+        if self.location_name and "-" in self.location_name:
+            # Pega só a primeira parte (o nome)
+            return self.location_name.split("-")[0].strip()
+        return self.location_name
+
+    # ISSO É VIRTUAL. NÃO VAI PRO BANCO DE DADOS.
+    @property
+    def bir_code(self):
+        if self.location_name and "-" in self.location_name:
+            # Pega só a última parte (o código)
+            return self.location_name.split("-")[-1].strip()
+        return "-"
+
     def __str__(self):
         return f"{self.date} | {self.location_name} | {self.model} | {self.overall_rating}"

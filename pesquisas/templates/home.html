@@ -1,48 +1,43 @@
-<!doctype html>
-<html lang="pt-br">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Portal - Home</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f7f7f8; }
-    .wrap { max-width: 1000px; margin: 0 auto; padding: 28px; }
-    .top { display:flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-    .card { background:#fff; border:1px solid #e6e6e6; border-radius: 14px; padding: 18px; }
-    .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
-    .btn { display:inline-block; padding: 12px 14px; border-radius: 10px; border:1px solid #ccc; text-decoration:none; color:#111; background:#fff; }
-    .btn.primary { border-color:#111; }
-    .muted { color:#666; font-size: 12px; }
-    h1 { margin: 0; font-size: 22px; }
-    h2 { margin: 0 0 10px 0; font-size: 16px; }
-    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="top">
-      <h1>Portal de Pesquisas</h1>
-      <div class="muted">
-        Logado como <b>{{ user.username }}</b> · <a href="/accounts/logout/">Sair</a>
-      </div>
-    </div>
+{% extends 'base.html' %}
 
-    <div class="card">
-      <h2>O que você quer fazer?</h2>
-      <div class="grid">
-        <div class="card">
-          <h2>Acessar as pesquisas</h2>
-          <p class="muted">Filtrar por data, loja, modelo, nota e buscar feedback.</p>
-          <a class="btn primary" href="/pesquisas/">Abrir pesquisas</a>
-        </div>
+{% block title %}Início - Portal Renault{% endblock %}
 
-        <div class="card">
-          <h2>Administração</h2>
-          <p class="muted">Acesso ao painel admin (somente para quem tem permissão).</p>
-          <a class="btn" href="/admin/">Abrir admin</a>
-        </div>
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-8 text-center mb-5">
+    <h1 class="display-4 mb-3">Bem-vindo ao Portal</h1>
+    <p class="lead text-muted">Gerencie e analise as pesquisas de satisfação.</p>
+  </div>
+</div>
+
+<div class="row justify-content-center g-4"> <div class="col-md-5 col-lg-4">
+    <div class="card h-100 p-4 text-center shadow-sm hover-effect">
+      <div class="card-body">
+        <i class="bi bi-table display-1 text-primary mb-3"></i>
+        <h3 class="card-title">Acessar Pesquisas</h3>
+        <p class="card-text text-muted">Consulte a base de dados, aplique filtros e exporte relatórios.</p>
+        <a href="{% url 'pesquisas:list' %}" class="btn btn-primary btn-lg w-100 mt-3">Abrir Lista</a>
       </div>
     </div>
   </div>
-</body>
-</html>
+
+  {% if user.is_staff %}
+  <div class="col-md-5 col-lg-4">
+    <div class="card h-100 p-4 text-center border-warning shadow-sm hover-effect">
+      <div class="card-body">
+        <i class="bi bi-shield-lock display-1 text-warning mb-3"></i>
+        <h3 class="card-title">Administração</h3>
+        <p class="card-text text-muted">Gerenciar usuários e configurações do sistema.</p>
+        <a href="/admin/" class="btn btn-outline-dark btn-lg w-100 mt-3">Painel Admin</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<style>
+  .hover-effect { transition: transform 0.2s; }
+  .hover-effect:hover { transform: translateY(-5px); }
+</style>
+{% endblock %}

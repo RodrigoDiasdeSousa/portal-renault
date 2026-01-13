@@ -1,27 +1,15 @@
 import csv
-import json
-from io import BytesIO
-from datetime import datetime
-from pathlib import Path
-
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
+import openpyxl
 from django.http import HttpResponse
-from django.views.generic import ListView, TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import ListView, DetailView, TemplateView
 from django_filters.views import FilterView
-
-from openpyxl import Workbook
-
-from .filters import SurveyResponseFilter
 from .models import SurveyResponse
+from .filters import SurveyResponseFilter
 
-
-# ---------- HOME ----------
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
 
-
-# ---------- LISTAGEM + FILTROS ----------
 class SurveyListView(LoginRequiredMixin, FilterView, ListView):
     model = SurveyResponse
     template_name = "pesquisas/survey_list.html"
@@ -30,72 +18,97 @@ class SurveyListView(LoginRequiredMixin, FilterView, ListView):
     paginate_by = 50
     ordering = ["-date"]
 
+class SurveyDetailView(LoginRequiredMixin, DetailView):
+    model = SurveyResponse
+    template_name = "pesquisas/survey_detail.html"
+    context_object_name = "survey"
 
-def _get_filtered_queryset(request):
-    base_qs = SurveyResponse.objects.all().order_by("-date")
-    f = SurveyResponseFilter(request.GET, queryset=base_qs)
-    return f.qs
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        obj = self.object
+        
+        # --- LÓGICA DE FATIAR O NOME ---
+        dealer_code = "-"
+        nome_limpo = obj.location_name # Começa com o nome original
 
+        if obj.location_name and "-" in obj.location_name:
+            partes = obj.location_name.split("-")
+            
+            # Pega a primeira parte (Nome da Loja)
+            nome_limpo = partes[0].strip()
+            
+            # Pega a última parte (Código)
+            dealer_code = partes[-1].strip()
+            
+        context['codigo_extraido'] = dealer_code
+        context['nome_loja_limpo'] = nome_limpo  # Nova variável para o HTML
+        return context
 
-def _load_schema(schema_name="base_csv_v1"):
-    """
-    Carrega a lista de colunas na ordem exata do CSV original.
-    Espera o arquivo: pesquisas/schemas/<schema_name>.json
-    """
-    schema_path = Path(__file__).resolve().parent / "schemas" / f"{schema_name}.json"
-    return json.loads(schema_path.read_text(encoding="utf-8"))
-
-
-# ---------- EXPORTAÇÃO (FORMATO ORIGINAL) ----------
-@login_required
+# --- EXPORTAR CSV ---
 def export_surveys_csv(request):
-    qs = _get_filtered_queryset(request)
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="pesquisas.csv"'
 
-    schema_name = "base_csv_v1"
-    schema = _load_schema(schema_name)
+    writer = csv.writer(response)
+    writer.writerow(['Data', 'Loja', 'Cód. Loja', 'Marca', 'Modelo', 'Nota', 'Feedback', 'Status'])
 
-    filename = f"pesquisas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    response = HttpResponse(content_type="text/csv; charset=utf-8")
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
-
-    # BOM para Excel (acentos OK)
-    response.write("\ufeff")
-
-    writer = csv.writer(response, delimiter=";")
-    writer.writerow(schema)  # header ORIGINAL
-
-    for obj in qs.iterator(chunk_size=2000):
-        raw = obj.raw_data or {}
-        writer.writerow([raw.get(col, "") for col in schema])
-
+    qs = SurveyResponse.objects.all().order_by('-date')
+    survey_filter = SurveyResponseFilter(request.GET, queryset=qs)
+    
+    for obj in survey_filter.qs:
+        nome_limpo = obj.location_name
+        dealer_code = "-"
+        
+        if obj.location_name and "-" in obj.location_name:
+            partes = obj.location_name.split("-")
+            nome_limpo = partes[0].strip()
+            dealer_code = partes[-1].strip()
+        
+        writer.writerow([
+            obj.date.strftime("%d/%m/%Y"),
+            nome_limpo,   # Exporta só o nome limpo
+            dealer_code,  # Exporta o código separado
+            obj.brand,
+            obj.model,
+            obj.overall_rating,
+            obj.experience_feedback,
+            obj.result_status
+        ])
     return response
 
-
-@login_required
+# --- EXPORTAR EXCEL ---
 def export_surveys_xlsx(request):
-    qs = _get_filtered_queryset(request)
-
-    schema_name = "base_csv_v1"
-    schema = _load_schema(schema_name)
-
-    wb = Workbook()
+    qs = SurveyResponse.objects.all().order_by('-date')
+    survey_filter = SurveyResponseFilter(request.GET, queryset=qs)
+    
+    wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Pesquisas"
+    ws.append(['Data', 'Loja', 'Cód. Loja', 'Marca', 'Modelo', 'Nota', 'Feedback', 'Status'])
 
-    ws.append(schema)  # header ORIGINAL
+    for obj in survey_filter.qs:
+        data_str = obj.date.strftime("%d/%m/%Y") if obj.date else ""
+        
+        nome_limpo = obj.location_name
+        dealer_code = "-"
+        
+        if obj.location_name and "-" in obj.location_name:
+            partes = obj.location_name.split("-")
+            nome_limpo = partes[0].strip()
+            dealer_code = partes[-1].strip()
 
-    for obj in qs.iterator(chunk_size=2000):
-        raw = obj.raw_data or {}
-        ws.append([raw.get(col, "") for col in schema])
+        ws.append([
+            data_str,
+            nome_limpo,  # Exporta só o nome limpo
+            dealer_code, # Exporta o código separado
+            obj.brand,
+            obj.model,
+            obj.overall_rating,
+            obj.experience_feedback,
+            obj.result_status
+        ])
 
-    bio = BytesIO()
-    wb.save(bio)
-    bio.seek(0)
-
-    filename = f"pesquisas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-    response = HttpResponse(
-        bio.getvalue(),
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="pesquisas.xlsx"'
+    wb.save(response)
     return response

@@ -78,11 +78,19 @@ class Command(BaseCommand):
                     (row.get("CUSTOMER_SURNAME_1") or "").strip(),
                     (row.get("CUSTOMER_SURNAME_2") or "").strip(),
                 ]).strip()
+                
                 raw = dict(row)
+                
                 defaults = dict(
                     # loja/local
                     location_code=(row.get("Location Code") or "").strip(),
-                    location_name=(row.get("Location Name") or "").strip(),
+                    
+                    # --- AQUI ESTAVA O ERRO ---
+                    # Antes: row.get("Location Name") -> Pegava só "Orvel Vila Velha"
+                    # Agora: row.get("Location Internal Name") -> Pega "Orvel Vila Velha - RENAULT - 07601179"
+                    location_name=(row.get("Location Internal Name") or "").strip(),
+                    # --------------------------
+
                     dealer_id=(row.get("Dealer Id") or "").strip(),
 
                     # classificação

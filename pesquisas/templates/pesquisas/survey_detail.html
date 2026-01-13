@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes da Pesquisa #{{ survey.pk }}{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+  
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+      <i class="bi bi-file-text"></i> Detalhes da Pesquisa
+      <span class="text-muted fs-5">#{{ survey.pk }}</span>
+    </h2>
+    <a href="{% url 'pesquisas:list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar para a lista
+    </a>
+  </div>
+
+  <div class="row g-4">
+    
+    <div class="col-md-8">
+      
+      <div class="card shadow-sm mb-4 border-primary">
+        <div class="card-header bg-primary text-white">
+          <i class="bi bi-chat-quote-fill"></i> Feedback do Cliente
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">Comentário sobre a Experiência</h5>
+          <p class="card-text fs-5 fst-italic text-dark">
+            "{{ survey.experience_feedback|default:"O cliente não deixou comentários de texto." }}"
+          </p>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-light fw-bold">
+          Dados Gerais
+        </div>
+        <div class="card-body">
+          <div class="row">
+            
+            <div class="col-md-6 mb-3">
+              <label class="text-muted small">Cliente</label>
+              <div class="fw-bold">{{ survey.customer_name|default:"Não informado" }}</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="text-muted small">Data da Resposta</label>
+              <div class="fw-bold">{{ survey.date|date:"d/m/Y H:i" }}</div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="text-muted small">Modelo</label>
+              <div class="fw-bold">{{ survey.model }} <span class="badge bg-secondary">{{ survey.brand }}</span></div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="text-muted small">Chassi (VIN)</label>
+              <div class="fw-bold font-monospace">{{ survey.vin|default:"-" }}</div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="text-muted small">Concessionária</label>
+              <div class="fw-bold">{{ nome_loja_limpo }}</div>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+              <label class="text-muted small">BIR</label>
+              <div class="fw-bold text-primary">{{ codigo_extraido }}</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-md-4">
+      
+      <div class="card shadow-sm mb-4 text-center">
+        <div class="card-body">
+          <h6 class="text-muted mb-3">NOTA GERAL</h6>
+          
+          {% if survey.overall_rating >= 5 %}
+            <div class="display-1 fw-bold text-success">{{ survey.overall_rating|floatformat:0 }}</div>
+            <span class="badge bg-success">Excelente</span>
+          {% elif survey.overall_rating >= 4 %}
+             <div class="display-1 fw-bold" style="color: #8ce99a;">{{ survey.overall_rating|floatformat:0 }}</div>
+             <span class="badge text-dark" style="background-color: #8ce99a;">Muito Bom</span>
+          {% elif survey.overall_rating >= 3 %}
+             <div class="display-1 fw-bold text-warning">{{ survey.overall_rating|floatformat:0 }}</div>
+             <span class="badge bg-warning text-dark">Regular</span>
+          {% else %}
+             <div class="display-1 fw-bold text-danger">{{ survey.overall_rating|floatformat:0 }}</div>
+             <span class="badge bg-danger">Crítico</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="list-group list-group-flush">
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Status</span>
+            <span class="fw-bold">{{ survey.result_status }}</span>
+          </div>
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Origem</span>
+            <span class="fw-bold">{{ survey.origin|default:"-" }}</span>
+          </div>
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Tipo de Atividade</span>
+            <span class="fw-bold">{{ survey.activity|default:"-" }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
