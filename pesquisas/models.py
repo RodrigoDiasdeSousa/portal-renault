@@ -63,3 +63,40 @@ class SurveyResponse(models.Model):
 
     def __str__(self):
         return f"{self.date} | {self.location_name} | {self.model} | {self.overall_rating}"
+
+class AfterSalesSurveyResponse(models.Model):
+    external_id = models.CharField(max_length=64, blank=True, db_index=True)
+    survey_id = models.CharField(max_length=64, blank=True, db_index=True)
+
+    # campos úteis (escolha os que existem no CSV de pós-vendas)
+    location_code = models.CharField(max_length=32, blank=True, db_index=True)
+    location_name = models.CharField(max_length=200, blank=True, db_index=True)
+    dealer_id = models.CharField(max_length=32, blank=True, db_index=True)
+
+    activity = models.CharField(max_length=32, blank=True, db_index=True)  # aqui deve ser After Sales
+    result_status = models.CharField(max_length=32, blank=True, db_index=True)
+    country_code = models.CharField(max_length=8, blank=True, db_index=True)
+
+    date = models.DateTimeField(db_index=True)
+    final_date = models.DateTimeField(null=True, blank=True)
+
+    # cliente/veículo (se existir nesse CSV)
+    customer_name = models.CharField(max_length=300, blank=True)
+    email = models.EmailField(blank=True)
+    vin = models.CharField(max_length=40, blank=True, db_index=True)
+    brand = models.CharField(max_length=20, blank=True, db_index=True)
+    model = models.CharField(max_length=80, blank=True, db_index=True)
+
+    overall_rating = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, db_index=True)
+    experience_feedback = models.TextField(blank=True)
+
+    # LINHA COMPLETA ORIGINAL
+    raw_data = models.JSONField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["external_id", "survey_id"], name="uniq_afs_external_survey"),
+        ]
+        ordering = ["-date", "-id"]
