@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block title %}Pesquisas{% endblock %}
+
+{% block content %}
+<style>
+  /* Deixa o item do dropdown mais espaçado e clicável */
+  .dropdown-item:hover {
+    background-color: #f8f9fa;
+  }
+  .form-check.dropdown-item {
+    padding-left: 2.5rem; /* Espaço para o checkbox */
+    margin: 0;
+  }
+  /* Garante que o input fique posicionado corretamente dentro do item */
+  .form-check-input {
+    margin-left: -1.5rem;
+  }
+  .cursor-pointer {
+    cursor: pointer;
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2><i class="bi bi-list-check"></i> Lista de Pesquisas</h2>
+</div>
+
+<div class="accordion mb-4 shadow-sm" id="accordionFiltros">
+  <div class="accordion-item">
+    <h2 class="accordion-header">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosBox">
+        <i class="bi bi-filter me-2"></i> Filtros de Pesquisa
+      </button>
+    </h2>
+    <div id="filtrosBox" class="accordion-collapse collapse show" data-bs-parent="#accordionFiltros">
+      <div class="accordion-body bg-light">
+        <form method="get" class="row g-3">
+          
+          <div class="col-md-3">
+            <label class="form-label small fw-bold">Data Início</label>
+            {{ filter.form.date_after }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold">Data Fim</label>
+            {{ filter.form.date_before }}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-primary">Filtrar por Nota</label>
+            
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start d-flex justify-content-between align-items-center bg-white" 
+                      type="button" 
+                      id="dropdownNota" 
+                      data-bs-toggle="dropdown" 
+                      data-bs-auto-close="outside" 
+                      aria-expanded="false">
+                Selecione as notas...
+              </button>
+              
+              <ul class="dropdown-menu w-100 shadow p-2" aria-labelledby="dropdownNota">
+                {% for checkbox in filter.form.rating_exact %}
+                  <li class="mb-1">
+                    <div class="form-check dropdown-item rounded">
+                      {{ checkbox.tag }} 
+                      <label class="form-check-label w-100 cursor-pointer ps-2" for="{{ checkbox.id_for_label }}">
+                        <span class="fw-bold">{{ checkbox.choice_label }}</span> 
+                        <i class="bi bi-star-fill text-warning small ms-1"></i>
+                      </label>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <label class="form-label small fw-bold">Ordenar por</label>
+            {{ filter.form.ordering }}
+          </div>
+
+          <div class="col-md-3">
+             <label class="form-label small fw-bold">Marca</label>
+             {{ filter.form.brand }}
+          </div>
+          <div class="col-md-3">
+             <label class="form-label small fw-bold">Modelo</label>
+             {{ filter.form.model }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold">Loja</label>
+            {{ filter.form.location_name }}
+          </div>
+          
+          <div class="col-md-3">
+            <label class="form-label small fw-bold">Busca Geral</label>
+            {{ filter.form.q }}
+          </div>
+
+          <div class="col-12 d-flex gap-2 pt-2 border-top mt-3">
+             <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Filtrar</button>
+             <a href="{% url 'pesquisas:list' %}" class="btn btn-outline-secondary">Limpar</a>
+             
+             <div class="ms-auto btn-group">
+                <a href="{% url 'pesquisas:export_csv' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm" title="Exportar CSV">
+                    <i class="bi bi-filetype-csv fs-5"></i>
+                </a>
+                <a href="{% url 'pesquisas:export_xlsx' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm" title="Exportar Excel">
+                    <i class="bi bi-file-earmark-excel fs-5"></i>
+                </a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Data</th>
+          <th>Loja</th>
+          <th>BIR</th> <th>Veículo</th>
+          <th class="text-center">Nota</th>
+          <th>Feedback</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in surveys %}
+          <tr style="cursor: pointer;" onclick="window.location='{% url 'pesquisas:detail' s.pk %}';">
+            
+            <td class="text-nowrap">{{ s.date|date:"d/m/Y" }}</td>
+            
+            <td class="fw-bold text-dark">{{ s.loja_formatada }}</td>
+
+            <td class="text-primary font-monospace">{{ s.bir_code }}</td>
+
+            <td>
+              <div class="fw-bold">{{ s.model }}</div>
+              <small class="text-muted">{{ s.brand }}</small>
+            </td>
+            
+            <td class="text-center">
+              {% if s.overall_rating >= 5 %}
+                  <span class="badge bg-success rounded-pill" style="min-width: 40px;">{{ s.overall_rating|floatformat:0 }}</span>
+              {% elif s.overall_rating >= 4 %}
+                  <span class="badge text-dark rounded-pill" style="background-color: #8ce99a; min-width: 40px;">{{ s.overall_rating|floatformat:0 }}</span>
+              {% elif s.overall_rating >= 3 %}
+                  <span class="badge bg-warning text-dark rounded-pill" style="min-width: 40px;">{{ s.overall_rating|floatformat:0 }}</span>
+              {% elif s.overall_rating >= 2 %}
+                  <span class="badge rounded-pill" style="background-color: #fd7e14; color: white; min-width: 40px;">{{ s.overall_rating|floatformat:0 }}</span>
+              {% else %}
+                  <span class="badge bg-danger rounded-pill" style="min-width: 40px;">{{ s.overall_rating|floatformat:0 }}</span>
+              {% endif %}
+            </td>
+
+            <td class="small text-secondary" style="max-width: 350px;">
+              {{ s.experience_feedback|default:"-"|truncatechars:80 }}
+            </td>
+
+            <td class="text-end" onclick="event.stopPropagation();">
+               <a href="{% url 'pesquisas:detail' s.pk %}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                 <i class="bi bi-eye"></i>
+               </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+              Nenhuma pesquisa encontrada.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+    <small class="text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</small>
+    <div>
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}" class="btn btn-sm btn-outline-primary">Anterior</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}" class="btn btn-sm btn-outline-primary">Próxima</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // 1. Pega os elementos
+    const dropdownBtn = document.getElementById('dropdownNota');
+    const checkboxes = document.querySelectorAll('#accordionFiltros .dropdown-menu input[type="checkbox"]');
+
+    // 2. Função que atualiza o texto do botão
+    function atualizarTextoDropdown() {
+      let selecionados = [];
+      
+      checkboxes.forEach(function(checkbox) {
+        if (checkbox.checked) {
+          let texto = checkbox.nextElementSibling.querySelector('span').innerText.trim();
+          selecionados.push(texto);
+        }
+      });
+
+      if (selecionados.length > 0) {
+        dropdownBtn.innerText = selecionados.join(', ');
+        dropdownBtn.classList.add('text-primary', 'fw-bold');
+        dropdownBtn.classList.remove('text-secondary');
+      } else {
+        dropdownBtn.innerText = 'Selecione as notas...';
+        dropdownBtn.classList.remove('text-primary', 'fw-bold');
+        dropdownBtn.classList.add('text-secondary');
+      }
+    }
+
+    // 3. Inicializa
+    atualizarTextoDropdown();
+
+    // 4. Event Listener
+    checkboxes.forEach(function(checkbox) {
+      checkbox.addEventListener('change', atualizarTextoDropdown);
+    });
+  });
+</script>
+
+{% endblock %}
